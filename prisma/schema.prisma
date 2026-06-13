@@ -1,0 +1,227 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ENUMS
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum ReviewEntity {
+  HOSPITAL
+  DOCTOR
+  MEDICAL_SERVICE
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ProofType {
+  BILL
+  APPOINTMENT_NUMBER
+  FILE_UPLOAD
+}
+
+enum LogSeverity {
+  INFO
+  WARNING
+  ERROR
+  SECURITY
+}
+
+enum VoteType {
+  HELPFUL
+  NOT_HELPFUL
+}
+
+enum ReportReason {
+  SPAM
+  OFFENSIVE_LANGUAGE
+  HIPAA_VIOLATION
+  FALSE_INFORMATION
+  OTHER
+}
+
+// Tables
+
+model User {
+  userId       String  @id @default(uuid()) @db.Uuid
+  firstName    String  @db.VarChar(100)
+  lastName     String? @db.VarChar(100)
+  email        String  @unique @db.VarChar(150)
+  passwordHash String  @db.VarChar(255)
+
+  role UserRole @default(USER)
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  // Relations
+  reviews       Review[]
+  systemLogs    SystemLog[]
+  reviewVotes   ReviewVote[]
+  reviewReports ReviewReport[]
+  savedListings SavedListing[]
+}
+
+model Hospital {
+  hospitalId String   @id @default(uuid()) @db.Uuid
+  name       String   @db.VarChar(150)
+  address    String   @db.Text
+  city       String   @db.VarChar(100)
+  country    String   @db.VarChar(100)
+  createdAt  DateTime @default(now()) @db.Timestamptz
+
+  // Relations
+  medicalServices    MedicalService[]
+  reviews            Review[]
+  doctorAffiliations DoctorAffiliation[]
+}
+
+model Doctor {
+  doctorId    String   @id @default(uuid()) @db.Uuid
+  specialtyId String   @db.Uuid
+  name        String   @db.VarChar(100)
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  // Relations
+  specialty          Specialty           @relation(fields: [specialtyId], references: [specialtyId], onDelete: Restrict)
+  doctorAffiliations DoctorAffiliation[]
+}
+
+// Many-to-Many Join Table for Multi-Facility Doctors
+model DoctorAffiliation {
+  doctorAffiliationId String   @id @default(uuid()) @db.Uuid
+  doctorId            String   @db.Uuid
+  hospitalId          String   @db.Uuid
+  isPrimary           Boolean  @default(true)
+  createdAt           DateTime @default(now()) @db.Timestamptz
+
+  // Relations
+  doctor   Doctor   @relation(fields: [doctorId], references: [doctorId], onDelete: Cascade)
+  hospital Hospital @relation(fields: [hospitalId], references: [hospitalId], onDelete: Cascade)
+
+  @@unique([doctorId, hospitalId])
+}
+
+model MedicalService {
+  serviceId   String   @id @default(uuid()) @db.Uuid
+  hospitalId  String   @db.Uuid
+  serviceName String   @db.VarChar(150)
+  description String?  @db.Text
+  createdAt   DateTime @default(now()) @db.Timestamptz
+
+  // Relations
+  hospital Hospital @relation(fields: [hospitalId], references: [hospitalId], onDelete: Cascade)
+}
+
+model Specialty {
+  specialtyId String @id @default(uuid()) @db.Uuid
+  name        String @unique @db.VarChar(100)
+  slug        String @unique @db.VarChar(100)
+
+  // Relations
+  doctors Doctor[]
+}
+
+model Review {
+  reviewId   String       @id @default(uuid()) @db.Uuid
+  userId     String?      @db.Uuid
+  hospitalId String       @db.Uuid
+  entityType ReviewEntity
+  entityId   String       @db.Uuid
+
+  // Sub-category Metrics
+  staffRating       Int
+  punctualityRating Int
+  knowledgeRating   Int?
+  bedsideRating     Int?
+  overallRating     Decimal @db.Decimal(3, 2)
+
+  comment    String         @db.Text
+  status     ApprovalStatus @default(PENDING)
+  adminNotes String?        @db.Text
+  createdAt  DateTime       @default(now()) @db.Timestamptz
+  updatedAt  DateTime       @updatedAt @db.Timestamptz
+
+  // Relations
+  user          User?          @relation(fields: [userId], references: [userId], onDelete: SetNull)
+  hospital      Hospital       @relation(fields: [hospitalId], references: [hospitalId], onDelete: Cascade)
+  reviewProofs  ReviewProof[]
+  reviewVotes   ReviewVote[]
+  reviewReports ReviewReport[]
+}
+
+model ReviewProof {
+  proofId    String    @id @default(uuid()) @db.Uuid
+  reviewId   String    @db.Uuid
+  type       ProofType
+  proofValue String    @db.Text
+  uploadedAt DateTime  @default(now()) @db.Timestamptz
+
+  // Relations
+  review Review @relation(fields: [reviewId], references: [reviewId], onDelete: Cascade)
+}
+
+model ReviewVote {
+  voteId    String   @id @default(uuid()) @db.Uuid
+  reviewId  String   @db.Uuid
+  userId    String   @db.Uuid
+  voteType  VoteType
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  // Relations
+  review Review @relation(fields: [reviewId], references: [reviewId], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@unique([reviewId, userId])
+}
+
+model ReviewReport {
+  reportId  String       @id @default(uuid()) @db.Uuid
+  reviewId  String       @db.Uuid
+  userId    String       @db.Uuid
+  reason    ReportReason
+  details   String?      @db.Text
+  isHandled Boolean      @default(false)
+  createdAt DateTime     @default(now()) @db.Timestamptz
+
+  // Relations
+  review Review @relation(fields: [reviewId], references: [reviewId], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [userId], onDelete: Cascade)
+}
+
+model SavedListing {
+  savedId    String       @id @default(uuid()) @db.Uuid
+  userId     String       @db.Uuid
+  entityType ReviewEntity
+  entityId   String       @db.Uuid
+  createdAt  DateTime     @default(now()) @db.Timestamptz
+
+  // Relations
+  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@unique([userId, entityType, entityId])
+}
+
+model SystemLog {
+  logId     String      @id @default(uuid()) @db.Uuid
+  userId    String?     @db.Uuid
+  action    String      @db.VarChar(100)
+  severity  LogSeverity @default(INFO)
+  details   String      @db.Text
+  ipAddress String?     @db.VarChar(45)
+  createdAt DateTime    @default(now()) @db.Timestamptz
+
+  // Relations
+  user User? @relation(fields: [userId], references: [userId], onDelete: SetNull)
+}
