@@ -13,7 +13,7 @@ enum UserRole {
   ADMIN
 }
 
-enum ReviewEntity {
+enum ListingEntity {
   HOSPITAL
   DOCTOR
   MEDICAL_SERVICE
@@ -51,6 +51,11 @@ enum ReportReason {
   OTHER
 }
 
+enum DoctorType {
+  MBBS
+  BDS
+}
+
 // Tables
 
 model User {
@@ -58,6 +63,8 @@ model User {
   firstName    String  @db.VarChar(100)
   lastName     String? @db.VarChar(100)
   email        String  @unique @db.VarChar(150)
+  phone        String  @db.VarChar(11)
+  nid          String  @unique @db.VarChar(17)
   passwordHash String  @db.VarChar(255)
 
   role UserRole @default(USER)
@@ -78,24 +85,33 @@ model Hospital {
   name       String   @db.VarChar(150)
   address    String   @db.Text
   city       String   @db.VarChar(100)
-  country    String   @db.VarChar(100)
+  country    String   @default("Bangladesh") @db.VarChar(100)
   createdAt  DateTime @default(now()) @db.Timestamptz
 
   // Relations
   medicalServices    MedicalService[]
   reviews            Review[]
   doctorAffiliations DoctorAffiliation[]
+
+  @@index([city])
+  @@index([name])
 }
 
 model Doctor {
-  doctorId    String   @id @default(uuid()) @db.Uuid
-  specialtyId String   @db.Uuid
-  name        String   @db.VarChar(100)
-  createdAt   DateTime @default(now()) @db.Timestamptz
+  doctorId      String     @id @default(uuid()) @db.Uuid
+  specialtyId   String     @db.Uuid
+  name          String     @db.VarChar(100)
+  bmdcId        String     @unique @db.VarChar(20)
+  doctorType    DoctorType @default(MBBS)
+  qualification String     @db.Text
+  createdAt     DateTime   @default(now()) @db.Timestamptz
 
   // Relations
   specialty          Specialty           @relation(fields: [specialtyId], references: [specialtyId], onDelete: Restrict)
   doctorAffiliations DoctorAffiliation[]
+  reviews            Review[]
+
+  @@index([name])
 }
 
 // Many-to-Many Join Table for Multi-Facility Doctors
@@ -122,6 +138,7 @@ model MedicalService {
 
   // Relations
   hospital Hospital @relation(fields: [hospitalId], references: [hospitalId], onDelete: Cascade)
+  reviews  Review[]
 }
 
 model Specialty {
@@ -131,16 +148,19 @@ model Specialty {
 
   // Relations
   doctors Doctor[]
+
+  @@index([slug])
 }
 
 model Review {
-  reviewId   String       @id @default(uuid()) @db.Uuid
-  userId     String?      @db.Uuid
-  hospitalId String       @db.Uuid
-  entityType ReviewEntity
-  entityId   String       @db.Uuid
+  reviewId String @id @default(uuid()) @db.Uuid
 
-  // Sub-category Metrics
+  userId String? @db.Uuid
+
+  doctorId   String? @db.Uuid
+  hospitalId String? @db.Uuid
+  serviceId  String? @db.Uuid
+
   staffRating       Int
   punctualityRating Int
   knowledgeRating   Int?
@@ -150,15 +170,23 @@ model Review {
   comment    String         @db.Text
   status     ApprovalStatus @default(PENDING)
   adminNotes String?        @db.Text
-  createdAt  DateTime       @default(now()) @db.Timestamptz
-  updatedAt  DateTime       @updatedAt @db.Timestamptz
 
-  // Relations
-  user          User?          @relation(fields: [userId], references: [userId], onDelete: SetNull)
-  hospital      Hospital       @relation(fields: [hospitalId], references: [hospitalId], onDelete: Cascade)
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  user     User?           @relation(fields: [userId], references: [userId], onDelete: SetNull)
+  doctor   Doctor?         @relation(fields: [doctorId], references: [doctorId], onDelete: Cascade)
+  hospital Hospital?       @relation(fields: [hospitalId], references: [hospitalId], onDelete: Cascade)
+  service  MedicalService? @relation(fields: [serviceId], references: [serviceId], onDelete: Cascade)
+
   reviewProofs  ReviewProof[]
   reviewVotes   ReviewVote[]
   reviewReports ReviewReport[]
+
+  @@index([doctorId])
+  @@index([hospitalId])
+  @@index([serviceId])
+  @@index([status])
 }
 
 model ReviewProof {
@@ -201,11 +229,11 @@ model ReviewReport {
 }
 
 model SavedListing {
-  savedId    String       @id @default(uuid()) @db.Uuid
-  userId     String       @db.Uuid
-  entityType ReviewEntity
-  entityId   String       @db.Uuid
-  createdAt  DateTime     @default(now()) @db.Timestamptz
+  savedId    String        @id @default(uuid()) @db.Uuid
+  userId     String        @db.Uuid
+  entityType ListingEntity
+  entityId   String        @db.Uuid
+  createdAt  DateTime      @default(now()) @db.Timestamptz
 
   // Relations
   user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
