@@ -3,6 +3,7 @@ import express from 'express';
 import { connectDB, disconnectDB } from "./database/db.js";
 
 import authRoutes from "./routes/authRoutes.js"
+import userRoutes from "./routes/userRoutes.js";
 
 connectDB();
 
@@ -21,6 +22,7 @@ app.get('/', (req, res) => {
 });
 
 app.use("/auth",authRoutes);
+app.use("/user", userRoutes);
 
 
 
