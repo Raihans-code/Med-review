@@ -1,0 +1,118 @@
+import { prisma } from "../database/db.js";
+
+export const createReview = async (req, res, next) => {
+  try {
+    const {
+      hospitalId, doctorId, serviceId,
+      staffRating, punctualityRating, knowledgeRating, bedsideRating,
+      overallRating, comment,
+    } = req.body;
+
+    const review = await prisma.review.create({
+      data: {
+        userId: req.user.userId,
+        hospitalId, doctorId, serviceId,
+        staffRating, punctualityRating, knowledgeRating, bedsideRating,
+        overallRating, comment,
+      },
+    });
+    res.status(201).json(review);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getReviews = async (req, res, next) => {
+  try {
+    const { hospitalId, doctorId, serviceId, status } = req.query;
+    const reviews = await prisma.review.findMany({
+      where: {
+        ...(hospitalId && { hospitalId }),
+        ...(doctorId && { doctorId }),
+        ...(serviceId && { serviceId }),
+        status: status || "APPROVED", // only show approved by default
+      },
+      include: { user: { select: { firstName: true, lastName: true } } },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(reviews);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getReviewById = async (req, res, next) => {
+  try {
+    const review = await prisma.review.findUniqueOrThrow({
+      where: { reviewId: req.params.id },
+      include: { reviewProofs: true, reviewVotes: true },
+    });
+    res.json(review);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Admin: approve/reject a review
+export const updateReviewStatus = async (req, res, next) => {
+  try {
+    const { status, adminNotes } = req.body; // PENDING | APPROVED | REJECTED
+    const review = await prisma.review.update({
+      where: { reviewId: req.params.id },
+      data: { status, adminNotes },
+    });
+    res.json(review);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const deleteReview = async (req, res, next) => {
+  try {
+    await prisma.review.delete({ where: { reviewId: req.params.id } });
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Add proof to a review
+export const addReviewProof = async (req, res, next) => {
+  try {
+    const { type, proofValue } = req.body;
+    const proof = await prisma.reviewProof.create({
+      data: { reviewId: req.params.id, type, proofValue },
+    });
+    res.status(201).json(proof);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Vote helpful / not helpful (upsert so a user can change their vote)
+export const voteReview = async (req, res, next) => {
+  try {
+    const { voteType } = req.body; // HELPFUL | NOT_HELPFUL
+    const vote = await prisma.reviewVote.upsert({
+      where: { reviewId_userId: { reviewId: req.params.id, userId: req.user.userId } },
+      update: { voteType },
+      create: { reviewId: req.params.id, userId: req.user.userId, voteType },
+    });
+    res.status(201).json(vote);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Report a review
+export const reportReview = async (req, res, next) => {
+  try {
+    const { reason, details } = req.body;
+    const report = await prisma.reviewReport.create({
+      data: { reviewId: req.params.id, userId: req.user.userId, reason, details },
+    });
+    res.status(201).json(report);
+  } catch (err) {
+    next(err);
+  }
+};
