@@ -4,7 +4,13 @@ import { connectDB, disconnectDB } from "./database/db.js";
 
 import authRoutes from "./routes/authRoutes.js"
 import userRoutes from "./routes/userRoutes.js";
-
+import hospitalRoutes from "./routes/hospitalRoutes.js";
+import doctorRoutes from "./routes/doctorRoutes.js";
+import specialtyRoutes from "./routes/specialtyRoutes.js";
+import medicalServiceRoutes from "./routes/medicalServiceRoutes.js";
+import reviewRoutes from "./routes/reviewRoutes.js";
+import savedListingRoutes from "./routes/savedListingRoutes.js";
+import { notFound, errorHandler } from "./middlewares/errorMiddleware.js";
 connectDB();
 
 
@@ -24,7 +30,16 @@ app.get('/', (req, res) => {
 app.use("/auth",authRoutes);
 app.use("/user", userRoutes);
 
+app.use("/hospitals", hospitalRoutes);
+app.use("/doctors", doctorRoutes);
+app.use("/specialties", specialtyRoutes);
+app.use("/services", medicalServiceRoutes);
+app.use("/reviews", reviewRoutes);
+app.use("/saved-listings", savedListingRoutes);
 
+
+app.use(notFound);
+app.use(errorHandler);
 
 
 const server = app.listen(PORT, () => {
