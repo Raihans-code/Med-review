@@ -67,7 +67,7 @@ const login = async ( req, res ) => {
     return res.status(400).json({error: "Invalid email or password"});
   }
 
-  const token = generateToken(user.id,res);
+  const token = generateToken(user.userId, res); 
 
   res.status(201).json({ 
     status: "success", 
@@ -94,4 +94,20 @@ const logout = (req, res) => {
   });
 }
 
-export { register, login, logout };
+const profile = async (req, res) => {
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      user: {
+        id: req.user.userId,
+        name: req.user.firstName + " " + req.user.lastName,
+        email: req.user.email,
+        phone: req.user.phone,
+        nid: req.user.nid,
+      },
+    },
+  });
+};
+
+export { register, login, logout, profile };

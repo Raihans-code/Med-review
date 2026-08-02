@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from 'express';
+import cookieParser from "cookie-parser";
 import { connectDB, disconnectDB } from "./database/db.js";
 
 import authRoutes from "./routes/authRoutes.js"
@@ -21,6 +22,7 @@ const app = express();
 //Body Parsing Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 //API ROUTES
 app.get('/', (req, res) => {
