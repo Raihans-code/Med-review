@@ -1,4 +1,6 @@
 import { prisma } from "../database/db.js";
+import { logAction } from "./systemLogController.js";
+
 
 export const createReview = async (req, res, next) => {
   try {
@@ -56,11 +58,20 @@ export const getReviewById = async (req, res, next) => {
 // Admin: approve/reject a review
 export const updateReviewStatus = async (req, res, next) => {
   try {
-    const { status, adminNotes } = req.body; // PENDING | APPROVED | REJECTED
+    const { status, adminNotes } = req.body;
     const review = await prisma.review.update({
       where: { reviewId: req.params.id },
       data: { status, adminNotes },
     });
+
+    await logAction({
+      userId: req.user.userId,
+      action: "UPDATE_REVIEW_STATUS",
+      severity: "INFO",
+      details: `Review ${req.params.id} set to ${status}`,
+      ipAddress: req.ip,
+    });
+
     res.json(review);
   } catch (err) {
     next(err);
@@ -70,10 +81,19 @@ export const updateReviewStatus = async (req, res, next) => {
 export const deleteReview = async (req, res, next) => {
   try {
     await prisma.review.delete({ where: { reviewId: req.params.id } });
+
+    await logAction({
+      userId: req.user.userId,
+      action: "DELETE_REVIEW",
+      severity: "WARNING",
+      details: `Review ${req.params.id} deleted`,
+      ipAddress: req.ip,
+    });
+
     res.status(204).send();
   } catch (err) {
     next(err);
-  }
+  } 
 };
 
 // Add proof to a review

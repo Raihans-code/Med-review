@@ -12,6 +12,7 @@ import medicalServiceRoutes from "./routes/medicalServiceRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import savedListingRoutes from "./routes/savedListingRoutes.js";
 import { notFound, errorHandler } from "./middlewares/errorMiddleware.js";
+import systemLogRoutes from "./routes/systemLogRoutes.js";
 connectDB();
 
 
@@ -31,6 +32,7 @@ app.get('/', (req, res) => {
 
 app.use("/auth",authRoutes);
 app.use("/user", userRoutes);
+app.use("/system-logs", systemLogRoutes);
 
 app.use("/hospitals", hospitalRoutes);
 app.use("/doctors", doctorRoutes);
