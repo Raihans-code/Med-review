@@ -8,6 +8,7 @@ export const getAllUsers = async (req, res) => {
       status: "success",
       data: {
         users: users.map((user) => ({
+          id: user.userId,
           name: user.firstName + " " + user.lastName,
           email: user.email,
           phone: user.phone,
