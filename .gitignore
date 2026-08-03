@@ -6,3 +6,5 @@ node_modules
 
 /prisma/migrations
 prisma/seed.js
+.postman
+postman
