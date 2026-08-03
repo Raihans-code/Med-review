@@ -5,4 +5,4 @@ node_modules
 /generated/prisma
 
 /prisma/migrations
-/prisma/seed.js
+prisma/seed.js
