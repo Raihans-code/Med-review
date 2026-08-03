@@ -99,10 +99,21 @@ export const deleteReview = async (req, res, next) => {
 // Add proof to a review
 export const addReviewProof = async (req, res, next) => {
   try {
-    const { type, proofValue } = req.body;
+    const { type } = req.body;
+
+    let proofValue;
+    if (req.file) {
+      proofValue = req.file.path; 
+    } else if (req.body.proofValue) {
+      proofValue = req.body.proofValue;
+    } else {
+      return res.status(400).json({ message: "Provide either a proofImage file or a proofValue" });
+    }
+
     const proof = await prisma.reviewProof.create({
       data: { reviewId: req.params.id, type, proofValue },
     });
+
     res.status(201).json(proof);
   } catch (err) {
     next(err);

@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from 'express';
 import cookieParser from "cookie-parser";
+import cors from "cors";
 import { connectDB, disconnectDB } from "./database/db.js";
 
 import authRoutes from "./routes/authRoutes.js"
@@ -24,6 +25,14 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+
+
+app.use(cors({
+  origin: process.env.FRONTEND_URL, 
+  credentials: true, 
+}));
+
 
 //API ROUTES
 app.get('/', (req, res) => {
