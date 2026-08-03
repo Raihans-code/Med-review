@@ -8,8 +8,9 @@ import { isAdmin } from "../middlewares/adminMiddleware.js";
 
 const router = express.Router();
 
-router.get("/", getReviews);
 router.get("/MyReviews/", authMiddleware, getMyReviews);
+router.get("/", getReviews);
+
 router.get("/:id", getReviewById);
 router.post("/", authMiddleware, createReview);
 router.patch("/:id/status", authMiddleware, isAdmin, updateReviewStatus);
