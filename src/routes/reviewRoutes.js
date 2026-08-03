@@ -1,7 +1,6 @@
-import express from "express";
 import {
   createReview, getReviews, getReviewById, updateReviewStatus, deleteReview,
-  addReviewProof, voteReview, reportReview,
+  addReviewProof, voteReview, reportReview, getMyReviews,
 } from "../controllers/reviewController.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
 import { isAdmin } from "../middlewares/adminMiddleware.js";
@@ -9,6 +8,7 @@ import { isAdmin } from "../middlewares/adminMiddleware.js";
 const router = express.Router();
 
 router.get("/", getReviews);
+router.get("/mine", authMiddleware, getMyReviews);
 router.get("/:id", getReviewById);
 router.post("/", authMiddleware, createReview);
 router.patch("/:id/status", authMiddleware, isAdmin, updateReviewStatus);

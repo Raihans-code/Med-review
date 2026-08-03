@@ -55,6 +55,24 @@ export const getReviewById = async (req, res, next) => {
   }
 };
 
+export const getMyReviews = async (req, res, next) => {
+  try {
+    const reviews = await prisma.review.findMany({
+      where: { userId: req.user.userId },
+      include: {
+        hospital: { select: { name: true, city: true } },
+        doctor: { select: { name: true } },
+        service: { select: { serviceName: true } },
+        reviewProofs: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(reviews);
+  } catch (err) {
+    next(err);
+  }
+};
+
 // Admin: approve/reject a review
 export const updateReviewStatus = async (req, res, next) => {
   try {
