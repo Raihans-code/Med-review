@@ -165,3 +165,74 @@ export const reportReview = async (req, res, next) => {
     next(err);
   }
 };
+
+export const getReviewsByHospitalName = async (req, res, next) => {
+  try {
+    const { name } = req.params;
+    const reviews = await prisma.review.findMany({
+      where: {
+        status: "APPROVED", // only show approved reviews publicly
+        hospital: {
+          name: { contains: name, mode: "insensitive" },
+        },
+      },
+      include: {
+        hospital: { select: { name: true, city: true } },
+        doctor: { select: { name: true } },
+        service: { select: { serviceName: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(reviews);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getReviewsByDoctorName = async (req, res, next) => {
+  try {
+    const { name } = req.params;
+    const reviews = await prisma.review.findMany({
+      where: {
+        status: "APPROVED",
+        doctor: {
+          name: { contains: name, mode: "insensitive" },
+        },
+      },
+      include: {
+        hospital: { select: { name: true, city: true } },
+        doctor: { select: { name: true } },
+        service: { select: { serviceName: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(reviews);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getReviewsBySpecialtyName = async (req, res, next) => {
+  try {
+    const { name } = req.params;
+    const reviews = await prisma.review.findMany({
+      where: {
+        status: "APPROVED",
+        doctor: {
+          specialty: {
+            name: { contains: name, mode: "insensitive" },
+          },
+        },
+      },
+      include: {
+        hospital: { select: { name: true, city: true } },
+        doctor: { select: { name: true, specialty: { select: { name: true } } } },
+        service: { select: { serviceName: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+    res.json(reviews);
+  } catch (err) {
+    next(err);
+  }
+};
